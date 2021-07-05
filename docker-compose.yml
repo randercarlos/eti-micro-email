@@ -1,0 +1,66 @@
+version: "3.7"
+
+services:
+  eti-micro-email-app:
+    image: laravel-app
+    build:
+      args:
+        user: eti-micro-email
+        uid: 1000
+      context: .
+      dockerfile: Dockerfile
+    container_name: eti-micro-email-app
+    restart: unless-stopped
+    depends_on:
+      - eti-micro-email-server
+      - eti-micro-email-queue
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    networks:
+      - eti-micro-email-network
+
+  eti-micro-email-server:
+    image: nginx:alpine
+    container_name: eti-micro-email-server
+    restart: unless-stopped
+    ports:
+      - 8003:80
+    volumes:
+      - .:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - eti-micro-email-network
+
+#  eti-micro-email-redis:
+#    image: redis:6.0
+#    container_name: eti-micro-email-redis
+#    restart: unless-stopped
+#    ports:
+#      - 6380:6379
+#    networks:
+#      - eti-micro-email-network
+
+  eti-micro-email-queue:
+    image: laravel-app
+    build:
+        args:
+            user: eti-micro-email
+            uid: 1000
+        context: .
+        dockerfile: Dockerfile
+    container_name: eti-micro-email-queue
+    restart: unless-stopped
+    depends_on:
+      - eti-micro-email-app
+#      - eti-micro-email-redis
+    working_dir: /var/www
+    volumes:
+        - .:/var/www
+    networks:
+      - eti-micro-email-network
+    command: php artisan queue:work
+
+networks:
+  eti-micro-email-network:
+    driver: bridge
