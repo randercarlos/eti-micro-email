@@ -13,7 +13,6 @@ services:
     restart: unless-stopped
     depends_on:
       - eti-micro-email-server
-      - eti-micro-email-queue
     working_dir: /var/www
     volumes:
       - .:/var/www
@@ -32,14 +31,14 @@ services:
     networks:
       - eti-micro-email-network
 
-#  eti-micro-email-redis:
-#    image: redis:6.0
-#    container_name: eti-micro-email-redis
-#    restart: unless-stopped
-#    ports:
-#      - 6380:6379
-#    networks:
-#      - eti-micro-email-network
+  eti-micro-email-redis:
+    image: redis:6.0
+    container_name: eti-micro-email-redis
+    restart: unless-stopped
+    ports:
+      - 6380:6379
+    networks:
+      - eti-micro-email-network
 
   eti-micro-email-queue:
     image: laravel-app
@@ -53,13 +52,30 @@ services:
     restart: unless-stopped
     depends_on:
       - eti-micro-email-app
-#      - eti-micro-email-redis
+      - eti-micro-email-redis
     working_dir: /var/www
     volumes:
         - .:/var/www
     networks:
       - eti-micro-email-network
     command: php artisan queue:work
+
+  eti-micro-email-rabbitmq:
+    image: rabbitmq:3.8-management
+    container_name: eti-micro-email-rabbitmq
+    restart: unless-stopped
+    ports:
+      - 5672:5672
+      - 15672:15672
+      - 15671:15671
+    depends_on:
+      - eti-micro-email-queue
+    networks:
+      - eti-micro-email-network
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST}
 
 networks:
   eti-micro-email-network:
